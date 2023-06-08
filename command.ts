@@ -1,6 +1,6 @@
-import { loadQARefineChain } from "langchain/chains";
-import { ChatOpenAI } from "langchain/chat_models/openai";
-import { Document } from "langchain/document";
+import { loadQARefineChain } from "npm:langchain/chains";
+import { ChatOpenAI } from "npm:langchain/chat_models/openai";
+import { Document } from "npm:langchain/document";
 import { Select } from "https://deno.land/x/cliffy@v0.25.7/prompt/select.ts";
 
 import { Command } from "https://deno.land/x/cliffy@v0.25.7/command/mod.ts";
@@ -96,8 +96,8 @@ const main = async (options: any, args: any) => {
     return Deno.exit(0);
   }
   if (action === "commit") {
-    await $`git commit -m "${message}"`;
-    return;
+    const res = await $`git commit -m "${message}"`;
+    Deno.exit(0);
   }
   if (action === "commit-with-editor") {
     const tmpfile = await Deno.makeTempFile();

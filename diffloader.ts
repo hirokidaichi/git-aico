@@ -1,5 +1,5 @@
-import { Document } from "langchain/document";
-import { CharacterTextSplitter } from "langchain/text_splitter";
+import { Document } from "npm:langchain/document";
+import { CharacterTextSplitter } from "npm:langchain/text_splitter";
 import { $ } from "https://deno.land/x/zx_deno@1.2.2/mod.mjs";
 
 $.verbose = false;
