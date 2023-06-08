@@ -1,0 +1,500 @@
+diff --git a/examples/src/indexes/javascript_text_splitter.ts b/examples/src/indexes/javascript_text_splitter.ts
+index bc466e35..1acac0ff 100644
+--- a/examples/src/indexes/javascript_text_splitter.ts
++++ b/examples/src/indexes/javascript_text_splitter.ts
+@@ -1,4 +1,4 @@
+-import {
++:qimport {
+   SupportedTextSplitterLanguages,
+   RecursiveCharacterTextSplitter,
+ } from "langchain/text_splitter";
+diff --git a/examples/src/indexes/vector_stores/mongo_fromTexts.ts b/examples/src/indexes/vector_stores/mongo_fromTexts.ts
+deleted file mode 100755
+index a235b694..00000000
+--- a/examples/src/indexes/vector_stores/mongo_fromTexts.ts
++++ /dev/null
+@@ -1,23 +0,0 @@
+-import { MongoVectorStore } from "langchain/vectorstores/mongo";
+-import { CohereEmbeddings } from "langchain/embeddings/cohere";
+-import { MongoClient } from "mongodb";
+-
+-export const run = async () => {
+-  const client = new MongoClient(process.env.MONGO_URI || "");
+-
+-  const collection = client.db("langchain").collection("test");
+-
+-  await MongoVectorStore.fromTexts(
+-    ["Hello world", "Bye bye", "What's this?"],
+-    [{ id: 2 }, { id: 1 }, { id: 3 }],
+-    new CohereEmbeddings(),
+-    {
+-      client,
+-      collection,
+-      // indexName: "default", // make sure that this matches the index name in atlas if not using "default"
+-    }
+-  );
+-
+-  // remember to close the client
+-  await client.close();
+-};
+diff --git a/examples/src/indexes/vector_stores/mongo_search.ts b/examples/src/indexes/vector_stores/mongo_search.ts
+deleted file mode 100755
+index 3c697c7e..00000000
+--- a/examples/src/indexes/vector_stores/mongo_search.ts
++++ /dev/null
+@@ -1,22 +0,0 @@
+-import { MongoVectorStore } from "langchain/vectorstores/mongo";
+-import { CohereEmbeddings } from "langchain/embeddings/cohere";
+-import { MongoClient } from "mongodb";
+-
+-export const run = async () => {
+-  const client = new MongoClient(process.env.MONGO_URI || "");
+-
+-  const collection = client.db("langchain").collection("test");
+-
+-  const vectorStore = new MongoVectorStore(new CohereEmbeddings(), {
+-    client,
+-    collection,
+-    // indexName: "default", // make sure that this matches the index name in atlas if not using "default"
+-  });
+-
+-  const resultOne = await vectorStore.similaritySearch("Hello world", 1);
+-
+-  console.log(resultOne);
+-
+-  // remember to close the client
+-  await client.close();
+-};
+diff --git a/examples/src/indexes/vector_stores/mongodb_atlas_fromTexts.ts b/examples/src/indexes/vector_stores/mongodb_atlas_fromTexts.ts
+new file mode 100755
+index 00000000..732b6536
+--- /dev/null
++++ b/examples/src/indexes/vector_stores/mongodb_atlas_fromTexts.ts
+@@ -0,0 +1,19 @@
++import { MongoDBAtlasVectorSearch } from "langchain/vectorstores/mongodb_atlas";
++import { CohereEmbeddings } from "langchain/embeddings/cohere";
++import { MongoClient } from "mongodb";
++
++export const run = async () => {
++  const client = new MongoClient(process.env.MONGODB_ATLAS_URI || "");
++  const namespace = "langchain.test";
++  const [dbName, collectionName] = namespace.split(".");
++  const collection = client.db(dbName).collection(collectionName);
++
++  await MongoDBAtlasVectorSearch.fromTexts(
++    ["Hello world", "Bye bye", "What's this?"],
++    [{ id: 2 }, { id: 1 }, { id: 3 }],
++    new CohereEmbeddings(),
++    { collection }
++  );
++
++  await client.close();
++};
+diff --git a/examples/src/indexes/vector_stores/mongodb_atlas_search.ts b/examples/src/indexes/vector_stores/mongodb_atlas_search.ts
+new file mode 100755
+index 00000000..c4adb6bd
+--- /dev/null
++++ b/examples/src/indexes/vector_stores/mongodb_atlas_search.ts
+@@ -0,0 +1,19 @@
++import { MongoDBAtlasVectorSearch } from "langchain/vectorstores/mongodb_atlas";
++import { CohereEmbeddings } from "langchain/embeddings/cohere";
++import { MongoClient } from "mongodb";
++
++export const run = async () => {
++  const client = new MongoClient(process.env.MONGODB_ATLAS_URI || "");
++  const namespace = "langchain.test";
++  const [dbName, collectionName] = namespace.split(".");
++  const collection = client.db(dbName).collection(collectionName);
++
++  const vectorStore = new MongoDBAtlasVectorSearch(new CohereEmbeddings(), {
++    collection,
++  });
++
++  const resultOne = await vectorStore.similaritySearch("Hello world", 1);
++  console.log(resultOne);
++
++  await client.close();
++};
+diff --git a/langchain/.env.example b/langchain/.env.example
+index 555d9e01..df969235 100644
+--- a/langchain/.env.example
++++ b/langchain/.env.example
+@@ -21,6 +21,7 @@ ZAPIER_NLA_API_KEY=ADD_YOURS_HERE
+ ANTHROPIC_API_KEY=ADD_YOURS_HERE
+ REPLICATE_API_KEY=ADD_YOURS_HERE
+ MONGO_URI=ADD_YOURS_HERE
++MONGODB_ATLAS_URI=ADD_YOURS_HERE
+ MILVUS_URL=ADD_YOURS_HERE
+ WEAVIATE_HOST=ADD_YOURS_HERE
+ WEAVIATE_SCHEME=ADD_YOURS_HERE
+diff --git a/langchain/.gitignore b/langchain/.gitignore
+index 6e1db276..e8c09994 100644
+--- a/langchain/.gitignore
++++ b/langchain/.gitignore
+@@ -115,6 +115,9 @@ vectorstores/weaviate.d.ts
+ vectorstores/mongo.cjs
+ vectorstores/mongo.js
+ vectorstores/mongo.d.ts
++vectorstores/mongodb_atlas.cjs
++vectorstores/mongodb_atlas.js
++vectorstores/mongodb_atlas.d.ts
+ vectorstores/pinecone.cjs
+ vectorstores/pinecone.js
+ vectorstores/pinecone.d.ts
+diff --git a/langchain/package.json b/langchain/package.json
+index afbb9f0f..c037a21b 100644
+--- a/langchain/package.json
++++ b/langchain/package.json
+@@ -127,6 +127,9 @@
+     "vectorstores/mongo.cjs",
+     "vectorstores/mongo.js",
+     "vectorstores/mongo.d.ts",
++    "vectorstores/mongodb_atlas.cjs",
++    "vectorstores/mongodb_atlas.js",
++    "vectorstores/mongodb_atlas.d.ts",
+     "vectorstores/pinecone.cjs",
+     "vectorstores/pinecone.js",
+     "vectorstores/pinecone.d.ts",
+@@ -905,6 +908,11 @@
+       "import": "./vectorstores/mongo.js",
+       "require": "./vectorstores/mongo.cjs"
+     },
++    "./vectorstores/mongodb_atlas": {
++      "types": "./vectorstores/mongodb_atlas.d.ts",
++      "import": "./vectorstores/mongodb_atlas.js",
++      "require": "./vectorstores/mongodb_atlas.cjs"
++    },
+     "./vectorstores/pinecone": {
+       "types": "./vectorstores/pinecone.d.ts",
+       "import": "./vectorstores/pinecone.js",
+diff --git a/langchain/scripts/create-entrypoints.js b/langchain/scripts/create-entrypoints.js
+index 1371393c..1ff3e402 100644
+--- a/langchain/scripts/create-entrypoints.js
++++ b/langchain/scripts/create-entrypoints.js
+@@ -54,6 +54,7 @@ const entrypoints = {
+   "vectorstores/faiss": "vectorstores/faiss",
+   "vectorstores/weaviate": "vectorstores/weaviate",
+   "vectorstores/mongo": "vectorstores/mongo",
++  "vectorstores/mongodb_atlas": "vectorstores/mongodb_atlas",
+   "vectorstores/pinecone": "vectorstores/pinecone",
+   "vectorstores/qdrant": "vectorstores/qdrant",
+   "vectorstores/supabase": "vectorstores/supabase",
+@@ -189,6 +190,7 @@ const requiresOptionalDependency = [
+   "vectorstores/faiss",
+   "vectorstores/weaviate",
+   "vectorstores/mongo",
++  "vectorstores/mongodb_atlas",
+   "vectorstores/pinecone",
+   "vectorstores/qdrant",
+   "vectorstores/supabase",
+diff --git a/langchain/src/text_splitter.ts b/langchain/src/text_splitter.ts
+index e3b2aa09..05a571d0 100644
+--- a/langchain/src/text_splitter.ts
++++ b/langchain/src/text_splitter.ts
+@@ -206,7 +206,7 @@ export interface RecursiveCharacterTextSplitterParams
+   separators: string[];
+ }
+ 
+-export const SupportedTextSplitterLanguages = [
++export const SupportedTextSplitteruages = [
+   "cpp",
+   "go",
+   "java",
+@@ -224,7 +224,7 @@ export const SupportedTextSplitterLanguages = [
+   "html",
+ ] as const;
+ 
+-export type SupportedTextSplitterLanguage =
++export type SupportedTextSplitterguage =
+   (typeof SupportedTextSplitterLanguages)[number];
+ 
+ export class RecursiveCharacterTextSplitter
+diff --git a/langchain/src/vectorstores/mongo.ts b/langchain/src/vectorstores/mongo.ts
+old mode 100755
+new mode 100644
+index 55edfa96..143d6805
+--- a/langchain/src/vectorstores/mongo.ts
++++ b/langchain/src/vectorstores/mongo.ts
+@@ -7,6 +7,7 @@ import { VectorStore } from "./base.js";
+ import { Embeddings } from "../embeddings/base.js";
+ import { Document } from "../document.js";
+ 
++/** @deprecated use `MongoDBAtlasVectorSearch` instead. */
+ export type MongoLibArgs = {
+   client: MongoClient;
+   collection: Collection<MongoDocument>;
+@@ -17,6 +18,7 @@ export type MongoVectorStoreQueryExtension = {
+   postQueryPipelineSteps?: MongoDocument[];
+ };
+ 
++/** @deprecated use `MongoDBAtlasVectorSearch` instead. */
+ export class MongoVectorStore extends VectorStore {
+   declare FilterType: MongoVectorStoreQueryExtension;
+ 
+diff --git a/langchain/src/vectorstores/mongodb_atlas.ts b/langchain/src/vectorstores/mongodb_atlas.ts
+new file mode 100755
+index 00000000..89a6da33
+--- /dev/null
++++ b/langchain/src/vectorstores/mongodb_atlas.ts
+@@ -0,0 +1,135 @@
++import type { Collection, Document as MongoDBDocument } from "mongodb";
++import { VectorStore } from "./base.js";
++import { Embeddings } from "../embeddings/base.js";
++import { Document } from "../document.js";
++
++export type MongoDBAtlasVectorSearchLibArgs = {
++  collection: Collection<MongoDBDocument>;
++  indexName?: string;
++  textKey?: string;
++  embeddingKey?: string;
++};
++
++export class MongoDBAtlasVectorSearch extends VectorStore {
++  declare FilterType: MongoDBDocument;
++
++  collection: Collection<MongoDBDocument>;
++
++  indexName: string;
++
++  textKey: string;
++
++  embeddingKey: string;
++
++  constructor(embeddings: Embeddings, args: MongoDBAtlasVectorSearchLibArgs) {
++    super(embeddings, args);
++    this.collection = args.collection;
++    this.indexName = args.indexName || "default";
++    this.textKey = args.textKey || "text";
++    this.embeddingKey = args.embeddingKey || "embedding";
++  }
++
++  async addVectors(vectors: number[][], documents: Document[]): Promise<void> {
++    const docs = vectors.map((embedding, idx) => ({
++      [this.textKey]: documents[idx].pageContent,
++      [this.embeddingKey]: embedding,
++      ...documents[idx].metadata,
++    }));
++    await this.collection.insertMany(docs);
++  }
++
++  async addDocuments(documents: Document[]): Promise<void> {
++    const texts = documents.map(({ pageContent }) => pageContent);
++    return this.addVectors(
++      await this.embeddings.embedDocuments(texts),
++      documents
++    );
++  }
++
++  async similaritySearchVectorWithScore(
++    query: number[],
++    k: number,
++    preFilter?: MongoDBDocument,
++    postFilterPipeline?: MongoDBDocument[]
++  ): Promise<[Document, number][]> {
++    const knnBeta: MongoDBDocument = {
++      vector: query,
++      path: this.embeddingKey,
++      k,
++    };
++    if (preFilter) {
++      knnBeta.filter = preFilter;
++    }
++    const pipeline: MongoDBDocument[] = [
++      {
++        $search: {
++          index: this.indexName,
++          knnBeta,
++        },
++      },
++      {
++        $project: {
++          [this.embeddingKey]: 0,
++          score: { $meta: "searchScore" },
++        },
++      },
++    ];
++    if (postFilterPipeline) {
++      pipeline.push(...postFilterPipeline);
++    }
++    const results = this.collection.aggregate(pipeline);
++
++    const ret: [Document, number][] = [];
++    for await (const result of results) {
++      const text = result[this.textKey];
++      delete result[this.textKey];
++      const { score, ...metadata } = result;
++      ret.push([new Document({ pageContent: text, metadata }), score]);
++    }
++
++    return ret;
++  }
++
++  async similaritySearch(
++    query: string,
++    k: number,
++    preFilter?: MongoDBDocument,
++    postFilterPipeline?: MongoDBDocument[]
++  ): Promise<Document[]> {
++    const results = await this.similaritySearchVectorWithScore(
++      await this.embeddings.embedQuery(query),
++      k,
++      preFilter,
++      postFilterPipeline
++    );
++    return results.map((result) => result[0]);
++  }
++
++  static async fromTexts(
++    texts: string[],
++    metadatas: object[] | object,
++    embeddings: Embeddings,
++    dbConfig: MongoDBAtlasVectorSearchLibArgs
++  ): Promise<MongoDBAtlasVectorSearch> {
++    const docs: Document[] = [];
++    for (let i = 0; i < texts.length; i += 1) {
++      const metadata = Array.isArray(metadatas) ? metadatas[i] : metadatas;
++      const newDoc = new Document({
++        pageContent: texts[i],
++        metadata,
++      });
++      docs.push(newDoc);
++    }
++    return MongoDBAtlasVectorSearch.fromDocuments(docs, embeddings, dbConfig);
++  }
++
++  static async fromDocuments(
++    docs: Document[],
++    embeddings: Embeddings,
++    dbConfig: MongoDBAtlasVectorSearchLibArgs
++  ): Promise<MongoDBAtlasVectorSearch> {
++    const instance = new this(embeddings, dbConfig);
++    await instance.addDocuments(docs);
++    return instance;
++  }
++}
+diff --git a/langchain/src/vectorstores/tests/mongo.int.test.ts b/langchain/src/vectorstores/tests/mongo.int.test.ts
+old mode 100755
+new mode 100644
+index d21597c9..8a853a87
+--- a/langchain/src/vectorstores/tests/mongo.int.test.ts
++++ b/langchain/src/vectorstores/tests/mongo.int.test.ts
+@@ -10,7 +10,6 @@ import { Document } from "../../document.js";
+ 
+ /**
+  * The following json can be used to create an index in atlas for cohere embeddings:
+-
+ {
+   "mappings": {
+     "fields": {
+@@ -24,7 +23,6 @@ import { Document } from "../../document.js";
+     }
+   }
+ }
+-
+  */
+ 
+ test.skip("MongoVectorStore with external ids", async () => {
+diff --git a/langchain/src/vectorstores/tests/mongodb_atlas.int.test.ts b/langchain/src/vectorstores/tests/mongodb_atlas.int.test.ts
+new file mode 100755
+index 00000000..06252706
+--- /dev/null
++++ b/langchain/src/vectorstores/tests/mongodb_atlas.int.test.ts
+@@ -0,0 +1,86 @@
++/* eslint-disable no-process-env */
++/* eslint-disable no-promise-executor-return */
++
++import { test, expect } from "@jest/globals";
++import { MongoClient } from "mongodb";
++import { CohereEmbeddings } from "../../embeddings/cohere.js";
++import { MongoDBAtlasVectorSearch } from "../mongodb_atlas.js";
++
++import { Document } from "../../document.js";
++
++/**
++ * The following json can be used to create an index in atlas for cohere embeddings.
++ * Use "langchain.test" for the namespace and "default" for the index name.
++
++{
++  "mappings": {
++    "dynamic": true,
++    "fields": {
++      "embedding": {
++        "dimensions": 1024,
++        "similarity": "euclidean",
++        "type": "knnVector"
++      }
++    }
++  }
++}
++*/
++
++function sleep(ms: number): Promise<void> {
++  return new Promise((resolve) => setTimeout(resolve, ms));
++}
++
++// eslint-disable-next-line @typescript-eslint/no-non-null-assertion
++const client = new MongoClient(process.env.MONGODB_ATLAS_URI!);
++
++test.skip("MongoDBAtlasVectorSearch with external ids", async () => {
++  expect(process.env.MONGODB_ATLAS_URI).toBeDefined();
++
++  try {
++    const namespace = "langchain.test";
++    const [dbName, collectionName] = namespace.split(".");
++    const collection = client.db(dbName).collection(collectionName);
++
++    const vectorStore = new MongoDBAtlasVectorSearch(new CohereEmbeddings(), {
++      collection,
++    });
++
++    expect(vectorStore).toBeDefined();
++
++    // check if the database is empty
++    await collection.deleteMany({});
++
++    await vectorStore.addDocuments([
++      { pageContent: "Dogs are tough.", metadata: { a: 1 } },
++      { pageContent: "Cats have fluff.", metadata: { b: 1 } },
++      { pageContent: "What is a sandwich?", metadata: { c: 1 } },
++      { pageContent: "That fence is purple.", metadata: { d: 1, e: 2 } },
++    ]);
++
++    // we sleep 2 seconds to make sure the index in atlas has replicated the new documents
++    await sleep(2000);
++    const results: Document[] = await vectorStore.similaritySearch(
++      "Sandwich",
++      1
++    );
++
++    expect(results).toEqual([
++      { pageContent: "What is a sandwich?", metadata: { c: 1 } },
++    ]);
++
++    // we can pre filter the search
++    const preFilter = {
++      range: { lte: 1, path: "e" },
++    };
++
++    const filteredResults = await vectorStore.similaritySearch(
++      "That fence is purple",
++      1,
++      preFilter
++    );
++
++    expect(filteredResults).toEqual([]);
++  } finally {
++    await client.close();
++  }
++});
+diff --git a/langchain/tsconfig.json b/langchain/tsconfig.json
+index 1c131e67..326c39f3 100644
+--- a/langchain/tsconfig.json
++++ b/langchain/tsconfig.json
+@@ -68,6 +68,7 @@
+       "src/vectorstores/faiss.ts",
+       "src/vectorstores/weaviate.ts",
+       "src/vectorstores/mongo.ts",
++      "src/vectorstores/mongodb_atlas.ts",
+       "src/vectorstores/pinecone.ts",
+       "src/vectorstores/qdrant.ts",
+       "src/vectorstores/supabase.ts",

@@ -44,12 +44,12 @@ const generateCommitMessages = async (
 };
 
 const main = async (options: any, args: any) => {
-  ///const spinner = Spinner.getInstance();
+  const spinner = Spinner.getInstance();
 
-  //spinner.start("Thinking ...");
+  await spinner.start("Thinking ...");
   const diffDocuments = await loadDiffFromGit();
   const commitMessages = await generateCommitMessages(diffDocuments);
-  //spinner.stop();
+  await spinner.stop();
 
   const candidates = commitMessages.map((message) => ({
     name: message,
