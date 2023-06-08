@@ -1,18 +1,14 @@
-import { loadQARefineChain } from "npm:langchain/chains";
-import { ChatOpenAI } from "npm:langchain/chat_models/openai";
-import { Document } from "npm:langchain/document";
 import { Select } from "https://deno.land/x/cliffy@v0.25.7/prompt/select.ts";
 
 import { Command } from "https://deno.land/x/cliffy@v0.25.7/command/mod.ts";
 import Spinner from "https://deno.land/x/cli_spinners@v0.0.2/mod.ts";
 import { $ } from "https://deno.land/x/zx_deno@1.2.2/mod.mjs";
 
-import { loadDiffFromGit } from "./diffloader.ts";
-import { DEFAULT_PROMPT } from "./prompt.ts";
+import { CommitMessageAgent } from "./agent.ts";
 
 $.verbose = false;
 
-const { options, args } = await new Command()
+const { options } = await new Command()
   .name("git-aico")
   .option("-m,--model <modelName:string>", "The model name to use", {
     default: "gpt-4",
@@ -29,30 +25,11 @@ const { options, args } = await new Command()
   )
   .parse(Deno.args);
 
-const model = new ChatOpenAI({
-  modelName: options.model,
-  temperature: options.temperature,
-  maxTokens: options.maxTokens,
-});
-
-const chain = loadQARefineChain(model);
-const prompt = options.prompt
-  ? Deno.readTextFileSync(options.prompt).toString()
-  : DEFAULT_PROMPT;
-
-const trimMessage = (message: string): string => {
-  return message.trim().replace(/^-+\s*/, "");
-};
-
-const generateCommitMessages = async (
-  diffDocuments: Document[],
-): Promise<string[]> => {
-  const response = await chain.call({
-    question: prompt,
-    input_documents: diffDocuments,
-  });
-  return response.output_text.split("\n").map(trimMessage);
-};
+const agent = new CommitMessageAgent(
+  options.model,
+  options.temperature,
+  options.maxTokens,
+);
 
 function repeatDot(n: number): string {
   let result = "";
@@ -62,7 +39,7 @@ function repeatDot(n: number): string {
   return result;
 }
 
-const main = async (options: any, args: any) => {
+const main = async () => {
   const spinner = Spinner.getInstance();
   const spinnerMessage = "Reading git diff staged ";
   await spinner.start(spinnerMessage);
@@ -73,8 +50,8 @@ const main = async (options: any, args: any) => {
       spinner.setText(spinnerMessage + repeatDot(c));
     }, 1000);
   }
-  const diffDocuments = await loadDiffFromGit();
-  const commitMessages = await generateCommitMessages(diffDocuments);
+
+  const commitMessages = await agent.thinkCommitMessages();
   await spinner.stop();
 
   const candidates = commitMessages.map((message) => ({
@@ -82,10 +59,15 @@ const main = async (options: any, args: any) => {
     value: message,
   }));
 
-  const message: string = await Select.prompt({
+  const message = await Select.prompt({
     message: "Choose a commit message",
-    options: candidates,
+    options: [...candidates,Select.separator("----"), { name: "exit", value: "exit" }],
   });
+  
+  if (message === "exit") {
+    Deno.exit(0);
+  }
+
   const action: string = await Select.prompt({
     message: "Choose an action",
     options: [
@@ -99,7 +81,7 @@ const main = async (options: any, args: any) => {
     return Deno.exit(0);
   }
   if (action === "commit") {
-    const res = await $`git commit -m "${message}"`;
+    await $`git commit -m "${message}"`;
     return Deno.exit(0);
   }
   if (action === "commit-with-editor") {
@@ -110,4 +92,4 @@ const main = async (options: any, args: any) => {
   }
 };
 
-await main(options, args);
+await main();
