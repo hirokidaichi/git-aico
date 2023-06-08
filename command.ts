@@ -66,12 +66,13 @@ const main = async (options: any, args: any) => {
   const spinner = Spinner.getInstance();
   const spinnerMessage = "Reading git diff staged ";
   await spinner.start(spinnerMessage);
-  let c = 0;
-  console.log(await $`git status`);
-  setInterval(() => {
-    c++;
-    spinner.setText(spinnerMessage + repeatDot(c));
-  }, 1000);
+  {
+    let c = 0;
+    setInterval(() => {
+      c++;
+      spinner.setText(spinnerMessage + repeatDot(c));
+    }, 1000);
+  }
   const diffDocuments = await loadDiffFromGit();
   const commitMessages = await generateCommitMessages(diffDocuments);
   await spinner.stop();
@@ -99,7 +100,7 @@ const main = async (options: any, args: any) => {
   }
   if (action === "commit") {
     const res = await $`git commit -m "${message}"`;
-    Deno.exit(0);
+    return Deno.exit(0);
   }
   if (action === "commit-with-editor") {
     const tmpfile = await Deno.makeTempFile();
