@@ -18,6 +18,9 @@ message.
     --max-tokens       <maxToken>   - The max tokens to use        (Default: 500)    
     -p, --prompt       <prompt>     - The prompt file path to use
 ```
+## Usage
+
+
 
 ## Install
 
