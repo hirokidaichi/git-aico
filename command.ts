@@ -5,29 +5,39 @@ import { Select } from "https://deno.land/x/cliffy@v0.25.7/prompt/select.ts";
 
 import { Command } from "https://deno.land/x/cliffy@v0.25.7/command/mod.ts";
 import Spinner from "https://deno.land/x/cli_spinners@v0.0.2/mod.ts";
-import { loadDiffFromFile, loadDiffFromGit } from "./diffloader.ts";
 import { $ } from "https://deno.land/x/zx_deno@1.2.2/mod.mjs";
+
+import { loadDiffFromGit } from "./diffloader.ts";
 
 $.verbose = false;
 
 const { options, args } = await new Command()
   .name("git-aico")
+  .option("-m,--model <modelName:string>", "The model name to use", {
+    default: "gpt-3.5-turbo",
+  })
+  .option("-t,--temperature <temp:number>", "The temperature to use", {
+    default: 0.1,
+  })
+  .option("--max-tokens <maxToken:number>", "The max tokens to use", {
+    default: 2500,
+  })
+  .option("-p,--prompt <prompt:string>", "The prompt file path to use", {
+    default: "./prompt.txt",
+  })
   .description(
     "The command that reads the difference and automatically generates a commit message.",
   )
-  .arguments("[commit]")
   .parse(Deno.args);
 
-console.log(options, args);
-
-const modelGPT4 = new ChatOpenAI({
-  modelName: "gpt-4",
-  temperature: 0.1,
-  maxTokens: 2500,
+const model = new ChatOpenAI({
+  modelName: options.model,
+  temperature: options.temperature,
+  maxTokens: options.maxTokens,
 });
 
-const chain = loadQARefineChain(modelGPT4);
-const prompt = Deno.readTextFileSync("./prompt.txt").toString();
+const chain = loadQARefineChain(model);
+const prompt = Deno.readTextFileSync(options.prompt).toString();
 
 const trimMessage = (message: string): string => {
   return message.trim().replace(/^-+\s*/, "");
@@ -43,10 +53,23 @@ const generateCommitMessages = async (
   return response.output_text.split("\n").map(trimMessage);
 };
 
+function repeatDot(n: number): string {
+  let result = "";
+  for (let i = 0; i < n; i++) {
+    result += ".";
+  }
+  return result;
+}
+
 const main = async (options: any, args: any) => {
   const spinner = Spinner.getInstance();
-
-  await spinner.start("Thinking ...");
+  const spinnerMessage = "Reading git diff staged ";
+  await spinner.start(spinnerMessage);
+  let c = 0;
+  setInterval(() => {
+    c++;
+    spinner.setText(spinnerMessage + repeatDot(c));
+  }, 1000);
   const diffDocuments = await loadDiffFromGit();
   const commitMessages = await generateCommitMessages(diffDocuments);
   await spinner.stop();
@@ -80,7 +103,6 @@ const main = async (options: any, args: any) => {
     await $`git commit -t ${tmpfile}`;
     await Deno.remove(tmpfile);
   }
-  console.log(message);
 };
 
 await main(options, args);
