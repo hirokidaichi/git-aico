@@ -17,7 +17,7 @@ const { options } = await new Command()
     default: 0.1,
   })
   .option("--max-tokens <maxToken:number>", "The max tokens to use", {
-    default: 3000,
+    default: 500,
   })
   .option("-p,--prompt <prompt:string>", "The prompt file path to use")
   .description(
@@ -53,6 +53,10 @@ const main = async () => {
 
   const commitMessages = await agent.thinkCommitMessages();
   await spinner.stop();
+  if (commitMessages.length !== 3) {
+    console.log("No commit message candidates were generated");
+    return Deno.exit(0);
+  }
 
   const candidates = commitMessages.map((message) => ({
     name: message,
@@ -61,9 +65,12 @@ const main = async () => {
 
   const message = await Select.prompt({
     message: "Choose a commit message",
-    options: [...candidates,Select.separator("----"), { name: "exit", value: "exit" }],
+    options: [...candidates, Select.separator("----"), {
+      name: "exit",
+      value: "exit",
+    }],
   });
-  
+
   if (message === "exit") {
     Deno.exit(0);
   }

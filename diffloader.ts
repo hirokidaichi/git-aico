@@ -22,5 +22,6 @@ export async function loadDiffFromFile(path: string): Promise<Document[]> {
 export async function loadDiffFromGit(cid?: string): Promise<Document[]> {
   const output = (cid) ? await $`git diff ${cid}` : await $`git diff --staged`;
   const outputText = output.toString();
+  if (outputText.length === 0) return [];
   return await createDocuments(outputText);
 }

@@ -39,6 +39,9 @@ export class CommitMessageAgent {
 
   public async thinkCommitMessages() {
     const diffDocuments = await loadDiffFromGit();
+    if (diffDocuments.length === 0) {
+      return [];
+    }
     return await this.generateCommitMessages(diffDocuments);
   }
   private trimMessage(message: string): string {
