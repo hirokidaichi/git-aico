@@ -91,6 +91,7 @@ const main = async (options: any, args: any) => {
       { name: "exit", value: "exit" },
     ],
   });
+  $.verbose = true;
   if (action === "exit") {
     return Deno.exit(0);
   }
