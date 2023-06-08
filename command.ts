@@ -15,13 +15,13 @@ $.verbose = false;
 const { options, args } = await new Command()
   .name("git-aico")
   .option("-m,--model <modelName:string>", "The model name to use", {
-    default: "gpt-3.5-turbo",
+    default: "gpt-4",
   })
   .option("-t,--temperature <temp:number>", "The temperature to use", {
     default: 0.1,
   })
   .option("--max-tokens <maxToken:number>", "The max tokens to use", {
-    default: 2500,
+    default: 3000,
   })
   .option("-p,--prompt <prompt:string>", "The prompt file path to use")
   .description(
@@ -36,7 +36,9 @@ const model = new ChatOpenAI({
 });
 
 const chain = loadQARefineChain(model);
-const prompt = options.prompt ? Deno.readTextFileSync(options.prompt).toString():DEFAULT_PROMPT;
+const prompt = options.prompt
+  ? Deno.readTextFileSync(options.prompt).toString()
+  : DEFAULT_PROMPT;
 
 const trimMessage = (message: string): string => {
   return message.trim().replace(/^-+\s*/, "");
@@ -65,6 +67,7 @@ const main = async (options: any, args: any) => {
   const spinnerMessage = "Reading git diff staged ";
   await spinner.start(spinnerMessage);
   let c = 0;
+  console.log(await $`git status`);
   setInterval(() => {
     c++;
     spinner.setText(spinnerMessage + repeatDot(c));
