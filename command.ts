@@ -97,6 +97,7 @@ const main = async (options: any, args: any) => {
   }
   if (action === "commit") {
     await $`git commit -m "${message}"`;
+    return;
   }
   if (action === "commit-with-editor") {
     const tmpfile = await Deno.makeTempFile();
