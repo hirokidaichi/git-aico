@@ -61,10 +61,10 @@ const main = async (options: any, args: any) => {
     options: candidates,
   });
   const action: string = await Select.prompt({
-    message: "",
+    message: "Choose an action",
     options: [
       { name: "git commit ", value: "commit" },
-      { name: "git commit with editor", value: "commit-editor" },
+      { name: "git commit with editor", value: "commit-with-editor" },
       { name: "exit", value: "exit" },
     ],
   });
@@ -74,7 +74,7 @@ const main = async (options: any, args: any) => {
   if (action === "commit") {
     await $`git commit -m "${message}"`;
   }
-  if (action === "commit-editor") {
+  if (action === "commit-with-editor") {
     const tmpfile = await Deno.makeTempFile();
     await Deno.writeTextFile(tmpfile, message);
     await $`git commit -t ${tmpfile}`;
