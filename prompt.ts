@@ -1,3 +1,4 @@
+export const DEFAULT_PROMPT = `
 Please generate 3 appropriate commit message candidates based on the context.
 (Do NOT number at the beginning of the line)
 
@@ -40,3 +41,4 @@ Output Examples:
 - Add diff loader module for handling Git diffs
 - Implement diff loading from file and Git in diffloader.ts
 - Create diffloader.ts to process and split Git diffs
+`;

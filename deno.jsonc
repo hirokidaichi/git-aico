@@ -1,13 +1,11 @@
 {
   "imports": {
-    "langchain/": "npm:/langchain/"
   },
-  // コメント入れられる
   "compilerOptions": {
   },
 
   "tasks": {
-    "dev-watch": "deno run --allow-net --allow-read --allow-write --allow-env --unstable --watch test.ts",
+    "local-install": "deno install --allow-net --allow-read --allow-write --allow-env --allow-run --unstable -f -n git-aico command.ts",
     "dev": "deno run --allow-net --allow-read --allow-write --allow-env --allow-run --unstable command.ts"
   }
 }

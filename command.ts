@@ -8,6 +8,7 @@ import Spinner from "https://deno.land/x/cli_spinners@v0.0.2/mod.ts";
 import { $ } from "https://deno.land/x/zx_deno@1.2.2/mod.mjs";
 
 import { loadDiffFromGit } from "./diffloader.ts";
+import { DEFAULT_PROMPT } from "./prompt.ts";
 
 $.verbose = false;
 
@@ -22,9 +23,7 @@ const { options, args } = await new Command()
   .option("--max-tokens <maxToken:number>", "The max tokens to use", {
     default: 2500,
   })
-  .option("-p,--prompt <prompt:string>", "The prompt file path to use", {
-    default: "./prompt.txt",
-  })
+  .option("-p,--prompt <prompt:string>", "The prompt file path to use")
   .description(
     "The command that reads the difference and automatically generates a commit message.",
   )
@@ -37,7 +36,7 @@ const model = new ChatOpenAI({
 });
 
 const chain = loadQARefineChain(model);
-const prompt = Deno.readTextFileSync(options.prompt).toString();
+const prompt = options.prompt ? Deno.readTextFileSync(options.prompt).toString():DEFAULT_PROMPT;
 
 const trimMessage = (message: string): string => {
   return message.trim().replace(/^-+\s*/, "");
