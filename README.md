@@ -3,6 +3,11 @@
 The command that reads the difference and automatically generates a commit
 message.
 
+
+https://github.com/hirokidaichi/git-aico/assets/95184/6d3b9412-5d5c-4d24-9d64-3b7a620e2c1f
+
+
+
 ```
   Usage: git aico
 
