@@ -88,7 +88,7 @@ const main = async () => {
     return Deno.exit(0);
   }
   if (action === "commit") {
-    await $`git commit -m "${message}"`;
+    await $`git commit -m ${message}`;
     return Deno.exit(0);
   }
   if (action === "commit-with-editor") {
